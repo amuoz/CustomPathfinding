@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 #include "Templates/SubclassOf.h"
 #include "GameFramework/PlayerController.h"
+#include "Locomotion/LocomotionComponent.h"
+
 #include "CustomPathfindingPlayerController.generated.h"
+
 
 /** Forward declaration to improve compiling times */
 class UNiagaraSystem;
@@ -16,6 +19,7 @@ class ACustomPathfindingPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
+
 	ACustomPathfindingPlayerController();
 
 	/** Time Threshold to know if it was a short press */
@@ -30,6 +34,8 @@ protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
 	uint32 bMoveToMouseCursor : 1;
 
+	void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
+
 	// Begin PlayerController interface
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
@@ -38,13 +44,19 @@ protected:
 	/** Input handlers for SetDestination action. */
 	void OnSetDestinationPressed();
 	void OnSetDestinationReleased();
-	void OnTouchPressed(const ETouchIndex::Type FingerIndex, const FVector Location);
-	void OnTouchReleased(const ETouchIndex::Type FingerIndex, const FVector Location);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetDestination(FVector TargetLocation);
+
+	UFUNCTION()
+	void OnRep_GoalLocation();
 
 private:
-	bool bInputPressed; // Input is bring pressed
-	bool bIsTouch; // Is it a touch device
-	float FollowTime; // For how long it has been pressed
+
+	UPROPERTY(ReplicatedUsing = OnRep_GoalLocation)
+	FVector GoalLocation = FVector::ZeroVector;
+
+	UPROPERTY()
+	ULocomotionComponent* LocomotionComponent = nullptr;
+
 };
-
-
