@@ -17,25 +17,27 @@ ACustomPathfindingPlayerController::ACustomPathfindingPlayerController()
 	LocomotionComponent = CreateDefaultSubobject<ULocomotionComponent>(TEXT("LocomotionComponent"));
 }
 
+ULocomotionComponent* ACustomPathfindingPlayerController::GetLocomotionComponent() const
+{
+	return LocomotionComponent;
+}
+
 void ACustomPathfindingPlayerController::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ACustomPathfindingPlayerController, GoalLocation);
 }
 
 void ACustomPathfindingPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 
-	if (!GoalLocation.Equals(FVector::ZeroVector))
+	if (APawn* pPawn = GetPawn())
 	{
-		// Direct the Pawn towards that location (Seek)
-		if (APawn* const myPawn = GetPawn())
-		{
-			FVector worldDirection = LocomotionComponent->Seek(GoalLocation);
-			myPawn->AddMovementInput(worldDirection, 1.f, false);
-		}
+		// Delegate movement actions to locomotion component
+		FVector direction = LocomotionComponent->Calculate();
+		
+		// Use character movement component for motion and replication
+		pPawn->AddMovementInput(direction, 1.f, false);
 	}
 }
 
@@ -52,10 +54,6 @@ void ACustomPathfindingPlayerController::OnSetDestinationPressed()
 {
 	// Just in case the character was moving because of a previous short press we stop it
 	// StopMovement();	// this is using the navsystem
-	if (APawn* const myPawn = GetPawn())
-	{
-		myPawn->AddMovementInput(FVector::ZeroVector, 0.f, false);
-	}
 }
 
 void ACustomPathfindingPlayerController::OnSetDestinationReleased()
@@ -73,15 +71,10 @@ void ACustomPathfindingPlayerController::OnSetDestinationReleased()
 	ServerSetDestination(Hit.Location);
 }
 
-void ACustomPathfindingPlayerController::OnRep_GoalLocation()
-{
-	
-}
-
 void ACustomPathfindingPlayerController::ServerSetDestination_Implementation(FVector TargetLocation)
 {
 	if (HasAuthority())
 	{
-		GoalLocation = TargetLocation;
+		LocomotionComponent->SetGoalLocation(TargetLocation);
 	}
 }

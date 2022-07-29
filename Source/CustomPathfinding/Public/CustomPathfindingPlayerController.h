@@ -30,6 +30,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UNiagaraSystem* FXCursor;
 
+	/** Get Agent locomotion component (Navigation) */
+	UFUNCTION(BlueprintCallable)
+	ULocomotionComponent* GetLocomotionComponent() const;
+
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
 	uint32 bMoveToMouseCursor : 1;
@@ -48,13 +52,7 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerSetDestination(FVector TargetLocation);
 
-	UFUNCTION()
-	void OnRep_GoalLocation();
-
 private:
-
-	UPROPERTY(ReplicatedUsing = OnRep_GoalLocation)
-	FVector GoalLocation = FVector::ZeroVector;
 
 	UPROPERTY()
 	ULocomotionComponent* LocomotionComponent = nullptr;
