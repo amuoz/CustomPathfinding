@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 
+#include "Locomotion/Navigation/Grid.h"
+
 #include "PathPlanner.generated.h"
 
 class APath;
-class AGrid;
 
 /**
  * 
@@ -20,23 +21,28 @@ class CUSTOMPATHFINDING_API UPathPlanner : public UObject
 public:
 
 	// Initializa path planner with navigable grid instance
-	void Init(const AGrid* InGrid);
+	void Init(AGrid* InGrid);
 
 	// Finds least cost path from character location to target location.
 	// Fills path with a list of waypoints
 	// Returns true if searh is successful, false otherwise
-	bool CreatePathToLocation(FVector InTargetLocation, APath& OutPath);
+	bool CreatePathToLocation(FVector StartLocation, FVector TargetLocation);
+
+	AGrid* GetGrid() const;
+
+	const TArray<FCell> GetPath();
 
 private:
 
-	int GetClosestNodeToLocation(FVector InLocation);
+	int GetDistance(const FCell& NodeA, const FCell& NodeB);
+
+	void RetracePath(FCell& startNode, FCell& targetNode);
 
 private:
 
 	UPROPERTY()
-	const AGrid* m_pGrid;
+	AGrid* m_pGrid;
 
-	// Goal location to plan a path
-	FVector m_TargetLocation;
-
+	UPROPERTY()
+	TArray<FCell> m_Path;
 };

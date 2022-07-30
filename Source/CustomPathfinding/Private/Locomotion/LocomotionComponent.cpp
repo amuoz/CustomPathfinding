@@ -16,7 +16,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogLocomotionComponent, Log, All);
 // Sets default values for this component's properties
 ULocomotionComponent::ULocomotionComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 	SetIsReplicatedByDefault(true);	
 }
 
@@ -26,18 +26,28 @@ FVector ULocomotionComponent::Calculate()
 	{
 		return FollowPath();
 	}
-
-	if (GoalLocation != FVector::ZeroVector)
-	{
-		return Seek(GoalLocation);
-	}
-
 	return FVector::ZeroVector;
 }
 
 void ULocomotionComponent::SetGoalLocation(FVector InGoalLocation)
 {
-	GoalLocation = InGoalLocation;
+	m_GoalLocation = InGoalLocation;
+	UE_LOG(LogLocomotionComponent, Log, TEXT("Set Goal Location: %s"), *InGoalLocation.ToString());
+
+	if (m_pPathPlanner->CreatePathToLocation(GetCharacter()->GetActorLocation(), m_GoalLocation))
+	{
+		APath* pPath = NewObject<APath>(GetOuter(), APath::StaticClass());
+
+		for (int i = 0; i < m_pPathPlanner->GetPath().Num(); i++)
+		{
+			ATargetPoint* pTargetPoint = NewObject<ATargetPoint>(GetOuter(), ATargetPoint::StaticClass());
+			pTargetPoint->SetActorLocation(m_pPathPlanner->GetPath()[i].Center);
+			pPath->Waypoints.Add(pTargetPoint);
+		}
+
+		SetPath(pPath);
+	}
+
 }
 
 void ULocomotionComponent::BeginPlay()
@@ -49,10 +59,24 @@ void ULocomotionComponent::BeginPlay()
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGrid::StaticClass(), foundGrids);
 	if (foundGrids.Num() > 0)
 	{
-		if (const AGrid* worldGrid = Cast<AGrid>(foundGrids[0]))
+		if (AGrid* worldGrid = Cast<AGrid>(foundGrids[0]))
 		{
 			m_pPathPlanner = NewObject<UPathPlanner>(GetOuter(), UPathPlanner::StaticClass());
 			m_pPathPlanner->Init(worldGrid);
+		}
+	}
+}
+
+void ULocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (GetCharacter() != nullptr)
+	{
+		// Movement driven by the server
+		if (GetOwnerRole() == ROLE_Authority)
+		{
+			m_MoveDirection = Calculate();
 		}
 	}
 }
@@ -61,7 +85,8 @@ void ULocomotionComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ULocomotionComponent, GoalLocation);
+	DOREPLIFETIME(ULocomotionComponent, m_GoalLocation);
+	DOREPLIFETIME(ULocomotionComponent, m_MoveDirection);
 }
 
 const ACharacter* ULocomotionComponent::GetCharacter() const
@@ -93,6 +118,11 @@ void ULocomotionComponent::SetPath(APath* InPath)
 	m_pPath->Init();
 }
 
+const FVector ULocomotionComponent::GetMoveDirection() const
+{
+	return m_MoveDirection;
+}
+
 FVector ULocomotionComponent::FollowPath()
 {
 	const ACharacter* pCharacter = GetCharacter();
@@ -107,7 +137,7 @@ FVector ULocomotionComponent::FollowPath()
 		return FVector::ZeroVector;
 	}
 
-	double distanceToWaypoint = FVector::Distance(m_pPath->GetCurrentWaypoint()->GetActorLocation(), pCharacter->GetActorLocation());
+	double distanceToWaypoint = FVector::Dist2D(m_pPath->GetCurrentWaypoint()->GetActorLocation(), pCharacter->GetActorLocation());
 	if (distanceToWaypoint < m_WaypointDistSq)
 	{
 		m_pPath->SetNextWaypoint();

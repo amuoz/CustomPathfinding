@@ -9,6 +9,8 @@
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogCustomPathfindingPlayerController, Log, All);
+
 ACustomPathfindingPlayerController::ACustomPathfindingPlayerController()
 {
 	bShowMouseCursor = true;
@@ -33,11 +35,8 @@ void ACustomPathfindingPlayerController::PlayerTick(float DeltaTime)
 
 	if (APawn* pPawn = GetPawn())
 	{
-		// Delegate movement actions to locomotion component
-		FVector direction = LocomotionComponent->Calculate();
-		
-		// Use character movement component for motion and replication
-		pPawn->AddMovementInput(direction, 1.f, false);
+		// Use character movement for motion and replication
+		pPawn->AddMovementInput(LocomotionComponent->GetMoveDirection(), 1.f, false);
 	}
 }
 

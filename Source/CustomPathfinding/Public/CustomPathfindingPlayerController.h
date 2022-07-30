@@ -54,7 +54,7 @@ protected:
 
 private:
 
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly)
 	ULocomotionComponent* LocomotionComponent = nullptr;
 
 };

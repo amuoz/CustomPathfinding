@@ -16,10 +16,44 @@ struct FCell
 public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	int32 Row;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	int32 Column;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	FVector Center;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	bool bObstacle;
+
+	int32 gCost;
+
+	int32 hCost;
+
+	int ParentRow;
+
+	int ParentColumn;
+
+public:
+
+	// fCost = gCost + hCost
+	int32 fCost() 
+	{ 
+		return gCost + hCost; 
+	}
+
+	inline bool operator==(const FCell& OtherCell) const
+	{
+		return Row == OtherCell.Row 
+			&& Column == OtherCell.Column;
+	}
+
+	inline bool operator!= (const FCell& OtherCell) const
+	{
+		return Row != OtherCell.Row
+			|| Column != OtherCell.Column;
+	}
 };
 
 USTRUCT(Blueprintable)
@@ -32,7 +66,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	TArray<FCell> CellArray;
 
-	FCell operator[] (int32 i) {
+	FCell& operator[] (int32 i) {
 		return CellArray[i];
 	}
 
@@ -47,8 +81,13 @@ class CUSTOMPATHFINDING_API AGrid : public AActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
+	
 	AGrid();
+
+	// Location to Cell
+	bool WorldLocationToCell(FVector Location, FCell& OutCell);
+
+	void GetNeighbours(FCell& Cell, TArray<FCell*>& Neighbours);
 
 public:
 
@@ -58,6 +97,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 GridSizeY = 5;
 
+	// Not editable for cube static mesh size convenience
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float NodeSize = 100.f;
 
