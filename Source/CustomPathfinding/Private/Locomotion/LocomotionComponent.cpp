@@ -7,15 +7,17 @@
 #include "Locomotion/Path.h"
 #include "Engine/TargetPoint.h"
 #include "Net/UnrealNetwork.h"
+#include "Locomotion/PathPlanner.h"
+#include "Kismet/GameplayStatics.h"
+#include "Locomotion/Navigation/Grid.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogLocomotionComponent, Log, All);
 
 // Sets default values for this component's properties
 ULocomotionComponent::ULocomotionComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-
-	SetIsReplicatedByDefault(true);
+	SetIsReplicatedByDefault(true);	
 }
 
 FVector ULocomotionComponent::Calculate()
@@ -38,21 +40,21 @@ void ULocomotionComponent::SetGoalLocation(FVector InGoalLocation)
 	GoalLocation = InGoalLocation;
 }
 
-// Called when the game starts
 void ULocomotionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
-	
-}
-
-// Called every frame
-void ULocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
+	// Init path planner only if grid navigation instance found
+	TArray<AActor*> foundGrids;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AGrid::StaticClass(), foundGrids);
+	if (foundGrids.Num() > 0)
+	{
+		if (const AGrid* worldGrid = Cast<AGrid>(foundGrids[0]))
+		{
+			m_pPathPlanner = NewObject<UPathPlanner>(GetOuter(), UPathPlanner::StaticClass());
+			m_pPathPlanner->Init(worldGrid);
+		}
+	}
 }
 
 void ULocomotionComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const

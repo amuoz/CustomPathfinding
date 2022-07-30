@@ -7,7 +7,9 @@
 
 #include "LocomotionComponent.generated.h"
 
+
 class APath;
+class UPathPlanner;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CUSTOMPATHFINDING_API ULocomotionComponent : public UActorComponent
@@ -19,6 +21,9 @@ public:
 	// Sets default values for this component's properties
 	ULocomotionComponent();
 
+	// Get controlled character
+	const ACharacter* GetCharacter() const;
+
 	// Prioritized steering combination
 	FVector Calculate();
 
@@ -29,21 +34,19 @@ public:
 
 protected:
 
-	// Called when the game starts
+	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
 	void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
-
-	const ACharacter* GetCharacter() const;
 
 	FVector Seek(FVector TargetLocation);
 
 	FVector FollowPath();
 
 private:
+
+	UPROPERTY()
+	UPathPlanner* m_pPathPlanner;
 
 	UPROPERTY(replicated)
 	FVector GoalLocation = FVector::ZeroVector;
