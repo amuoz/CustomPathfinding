@@ -29,7 +29,10 @@ const ATargetPoint* APath::GetCurrentWaypoint() const
 
 void APath::Init()
 {
-	m_pCurrentWaypoint = Waypoints[0];
+	if (Waypoints.Num() > 0)
+	{
+		m_pCurrentWaypoint = Waypoints[0];
+	}
 }
 
 bool APath::IsFinished() const

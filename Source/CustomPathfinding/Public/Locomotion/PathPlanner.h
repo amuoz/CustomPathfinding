@@ -32,11 +32,15 @@ public:
 
 	const TArray<FCell> GetPath();
 
+	const TArray<FVector> GetLocationPath() const;
+
 private:
 
 	int GetDistance(const FCell& NodeA, const FCell& NodeB);
 
-	void RetracePath(FCell& startNode, FCell& targetNode);
+	void RetracePath(FCell& StartNode, FCell& TargetNode);
+
+	void SmoothPath(const  FVector& StartLocation, const  FVector& TargetLocation);
 
 private:
 
@@ -45,4 +49,7 @@ private:
 
 	UPROPERTY()
 	TArray<FCell> m_Path;
+
+	UPROPERTY()
+	TArray<FVector> m_LocationPath;
 };

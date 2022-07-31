@@ -34,6 +34,8 @@ public:
 
 	const FVector GetMoveDirection() const;
 
+	bool CheckCharacterCanWalk(FVector StartLocation, FVector EndLocation);
+
 protected:
 
 	// Called when the game starts or when spawned

@@ -4,7 +4,6 @@
 #include "Locomotion/PathPlanner.h"
 
 #include "Locomotion/LocomotionComponent.h"
-#include "GameFramework/Character.h"
 #include "Locomotion/Navigation/Grid.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogPathPlanner, Log, All);
@@ -18,7 +17,7 @@ bool UPathPlanner::CreatePathToLocation(FVector StartLocation, FVector TargetLoc
 {
 	m_Path.Empty();
 
-	// 1. Get closest node to character location
+	// 1. Get closest node to start location
 	FCell startNode;
 	if (!m_pGrid->WorldLocationToCell(StartLocation, startNode))
 	{
@@ -58,6 +57,10 @@ bool UPathPlanner::CreatePathToLocation(FVector StartLocation, FVector TargetLoc
 		if (*currentNode == targetNode)
 		{
 			RetracePath(startNode, *currentNode);
+
+			// Smooth path post-process
+			SmoothPath(StartLocation, TargetLocation);
+
 			return true;
 		}
 
@@ -106,6 +109,11 @@ const TArray<FCell> UPathPlanner::GetPath()
 	return m_Path;
 }
 
+const TArray<FVector> UPathPlanner::GetLocationPath() const
+{
+	return m_LocationPath;
+}
+
 int UPathPlanner::GetDistance(const FCell& NodeA, const FCell& NodeB)
 {
 	int32 dstX = FMath::Abs(NodeA.Row - NodeB.Row);
@@ -118,13 +126,57 @@ int UPathPlanner::GetDistance(const FCell& NodeA, const FCell& NodeB)
 	return 14 * dstX + 10 * (dstY - dstX);
 }
 
-void UPathPlanner::RetracePath(FCell& startNode, FCell& targetNode)
+void UPathPlanner::RetracePath(FCell& StartNode, FCell& TargetNode)
 {
-	FCell currentNode = targetNode;
-	while ( currentNode != startNode )
+	FCell currentNode = TargetNode;
+	while ( currentNode != StartNode )
 	{
 		m_Path.Add(currentNode);
 		currentNode = m_pGrid->Cells[currentNode.ParentRow][currentNode.ParentColumn];
 	}
+	m_Path.Add(currentNode);
 	Algo::Reverse(m_Path);
+}
+
+void UPathPlanner::SmoothPath(const  FVector& StartLocation, const  FVector& TargetLocation)
+{
+	// Convert Nodes path to Edges path
+	std::list<FGraphEdge> pathEdges;
+	pathEdges.push_back(FGraphEdge(StartLocation, m_Path[0].Center));
+	for (int i = 0; i < m_Path.Num()-1; i++)
+	{
+		pathEdges.push_back(FGraphEdge(m_Path[i].Center, m_Path[i+1].Center));
+	}
+	pathEdges.push_back(FGraphEdge(m_Path.Last().Center, TargetLocation));
+
+	auto it1 = pathEdges.begin();
+	auto it2 = pathEdges.begin();
+
+	// increment it2 to the node following it1
+	++it2;
+
+	// while it2 is not the last node in the path, step through the nodes
+	while (it2 != pathEdges.end())
+	{
+		// check for obstruction and adjust accordingly
+		ULocomotionComponent* pLocomotion = Cast<ULocomotionComponent>(GetOuter());
+		if (pLocomotion->CheckCharacterCanWalk(it1->Source, it2->Destination))
+		{
+			it1->Destination = it2->Destination;
+			it2 = pathEdges.erase(it2);
+		}
+		else
+		{
+			it1 = it2;
+			++it2;
+		}
+	}
+
+	// Construct the new path
+	m_LocationPath.Empty();
+	for (auto it = pathEdges.begin(); it != pathEdges.end(); ++it)
+	{
+		m_LocationPath.Add(it->Destination);
+	}
+
 }

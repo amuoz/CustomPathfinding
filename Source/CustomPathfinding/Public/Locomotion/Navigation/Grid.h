@@ -75,6 +75,30 @@ public:
 	}
 };
 
+USTRUCT()
+struct FGraphEdge
+{
+	GENERATED_BODY()
+
+public:
+
+	FGraphEdge() 
+	{
+		Source = FVector::ZeroVector;
+		Destination = FVector::ZeroVector;
+	}
+
+	FGraphEdge(const FVector& InSource, const FVector& InDestination)
+	{
+		Source = InSource;
+		Destination = InDestination;
+	}
+
+	FVector Source;
+
+	FVector Destination;
+};
+
 UCLASS()
 class CUSTOMPATHFINDING_API AGrid : public AActor
 {

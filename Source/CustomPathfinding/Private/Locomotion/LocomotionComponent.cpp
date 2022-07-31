@@ -10,6 +10,7 @@
 #include "Locomotion/PathPlanner.h"
 #include "Kismet/GameplayStatics.h"
 #include "Locomotion/Navigation/Grid.h"
+#include "Components/CapsuleComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogLocomotionComponent, Log, All);
 
@@ -37,17 +38,26 @@ void ULocomotionComponent::SetGoalLocation(FVector InGoalLocation)
 	if (m_pPathPlanner->CreatePathToLocation(GetCharacter()->GetActorLocation(), m_GoalLocation))
 	{
 		APath* pPath = NewObject<APath>(GetOuter(), APath::StaticClass());
+		
+		// with smooth path pass
+		for (int i = 0; i < m_pPathPlanner->GetLocationPath().Num(); i++)
+		{
+			ATargetPoint* pTargetPoint = NewObject<ATargetPoint>(GetOuter(), ATargetPoint::StaticClass());
+			pTargetPoint->SetActorLocation(m_pPathPlanner->GetLocationPath()[i]);
+			pPath->Waypoints.Add(pTargetPoint);
+		}
 
+		/*
 		for (int i = 0; i < m_pPathPlanner->GetPath().Num(); i++)
 		{
 			ATargetPoint* pTargetPoint = NewObject<ATargetPoint>(GetOuter(), ATargetPoint::StaticClass());
 			pTargetPoint->SetActorLocation(m_pPathPlanner->GetPath()[i].Center);
 			pPath->Waypoints.Add(pTargetPoint);
 		}
+		*/
 
 		SetPath(pPath);
 	}
-
 }
 
 void ULocomotionComponent::BeginPlay()
@@ -61,7 +71,7 @@ void ULocomotionComponent::BeginPlay()
 	{
 		if (AGrid* worldGrid = Cast<AGrid>(foundGrids[0]))
 		{
-			m_pPathPlanner = NewObject<UPathPlanner>(GetOuter(), UPathPlanner::StaticClass());
+			m_pPathPlanner = NewObject<UPathPlanner>(this, UPathPlanner::StaticClass());
 			m_pPathPlanner->Init(worldGrid);
 		}
 	}
@@ -121,6 +131,42 @@ void ULocomotionComponent::SetPath(APath* InPath)
 const FVector ULocomotionComponent::GetMoveDirection() const
 {
 	return m_MoveDirection;
+}
+
+bool ULocomotionComponent::CheckCharacterCanWalk(FVector StartLocation, FVector EndLocation)
+{
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypesArray;
+	ObjectTypesArray.Add(UEngineTypes::ConvertToObjectType(ECollisionChannel::ECC_WorldStatic));
+	TArray<AActor*> IgnoredActors;
+	FHitResult OutHit;
+	
+	/*
+	bool bHit = UKismetSystemLibrary::LineTraceSingleForObjects(
+		GetOwner()->GetWorld(),
+		StartLocation,
+		EndLocation + FVector(0.f, 0.f, GetCharacter()->GetDefaultHalfHeight()),
+		ObjectTypesArray,
+		false,
+		IgnoredActors,
+		EDrawDebugTrace::ForDuration,
+		OutHit,
+		true);
+	*/
+	
+	bool bHit = UKismetSystemLibrary::CapsuleTraceSingleForObjects(
+		GetOwner()->GetWorld(), 
+		StartLocation + FVector(0.f, 0.f, GetCharacter()->GetDefaultHalfHeight()),
+		EndLocation + FVector(0.f, 0.f, GetCharacter()->GetDefaultHalfHeight()),
+		GetCharacter()->GetSimpleCollisionRadius(),
+		GetCharacter()->GetDefaultHalfHeight(),
+		ObjectTypesArray, 
+		false, 
+		IgnoredActors, 
+		EDrawDebugTrace::ForDuration, 
+		OutHit, 
+		true);
+	
+	return !bHit;
 }
 
 FVector ULocomotionComponent::FollowPath()

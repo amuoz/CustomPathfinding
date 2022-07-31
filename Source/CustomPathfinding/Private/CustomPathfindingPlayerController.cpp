@@ -36,7 +36,7 @@ void ACustomPathfindingPlayerController::PlayerTick(float DeltaTime)
 	if (APawn* pPawn = GetPawn())
 	{
 		// Use character movement for motion and replication
-		pPawn->AddMovementInput(LocomotionComponent->GetMoveDirection(), 1.f, false);
+		pPawn->AddMovementInput(LocomotionComponent->GetMoveDirection() * 5.f, 1.f, false);
 	}
 }
 
