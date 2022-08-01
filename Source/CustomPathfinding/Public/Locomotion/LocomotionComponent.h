@@ -18,53 +18,69 @@ class CUSTOMPATHFINDING_API ULocomotionComponent : public UActorComponent
 
 public:
 
-	// Sets default values for this component's properties
 	ULocomotionComponent();
 
 	// Get controlled character
 	const ACharacter* GetCharacter() const;
 
-	// Prioritized steering combination
-	FVector Calculate();
+	// Set Goal Location turns on pathfinding
+	void SetGoalLocation(FVector GoalLocation);
 
-	void SetGoalLocation(FVector InGoalLocation);
-
-	UFUNCTION(BlueprintCallable)
-	void SetPath(APath* InPath);
-
+	// Get calculated move direction by steerings
 	const FVector GetMoveDirection() const;
 
+	// Utility for path planning
 	bool CheckCharacterCanWalk(FVector StartLocation, FVector EndLocation);
+
+	UFUNCTION(BlueprintCallable)
+	void SetSmoothing(bool NewSmoothing);
+
+public:
+
+	// Waypoint distance acceptance
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Locomotion")
+	double WaypointDistanceSq = 50.f;
+
+	// Path smoothing optimization
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Locomotion")
+	bool bSmoothing = true;
+
+	// Debug flag
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Locomotion")
+	bool bDebug = true;
 
 protected:
 
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 
+	// Steering calculation (only path following)
+	FVector Calculate();
+
+private:
+
+	// Sets path to follow
+	void SetPath(APath* InPath);
+
+	// Seeks target direction
 	FVector Seek(FVector TargetLocation);
 
+	// Path following
 	FVector FollowPath();
-
 
 private:
 
 	UPROPERTY()
-	UPathPlanner* m_pPathPlanner;
-
-	UPROPERTY(replicated)
-	FVector m_GoalLocation = FVector::ZeroVector;
-
-	UPROPERTY(replicated)
-	FVector m_MoveDirection = FVector::ZeroVector;
+	UPathPlanner* m_pPathPlanner = nullptr;
 
 	UPROPERTY()
 	APath* m_pPath = nullptr;
 
-	UPROPERTY(EditAnywhere)
-	double m_WaypointDistSq = 50.f;
+	UPROPERTY(replicated)
+	FVector m_MoveDirection = FVector::ZeroVector;
+
 };
 

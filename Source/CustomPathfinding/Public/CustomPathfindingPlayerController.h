@@ -22,6 +22,12 @@ public:
 
 	ACustomPathfindingPlayerController();
 
+	// Get agent locomotion component
+	UFUNCTION(BlueprintCallable)
+	ULocomotionComponent* GetLocomotionComponent() const;
+
+public:
+
 	/** Time Threshold to know if it was a short press */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	float ShortPressThreshold;
@@ -30,15 +36,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UNiagaraSystem* FXCursor;
 
-	/** Get Agent locomotion component (Navigation) */
-	UFUNCTION(BlueprintCallable)
-	ULocomotionComponent* GetLocomotionComponent() const;
-
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
 	uint32 bMoveToMouseCursor : 1;
-
-	void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const override;
 
 	// Begin PlayerController interface
 	virtual void PlayerTick(float DeltaTime) override;
@@ -46,9 +46,9 @@ protected:
 	// End PlayerController interface
 
 	/** Input handlers for SetDestination action. */
-	void OnSetDestinationPressed();
 	void OnSetDestinationReleased();
 
+	// Sends clicked goal location to server
 	UFUNCTION(Server, Reliable)
 	void ServerSetDestination(FVector TargetLocation);
 

@@ -24,19 +24,15 @@ ULocomotionComponent* ACustomPathfindingPlayerController::GetLocomotionComponent
 	return LocomotionComponent;
 }
 
-void ACustomPathfindingPlayerController::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-}
-
 void ACustomPathfindingPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 
 	if (APawn* pPawn = GetPawn())
 	{
-		// Use character movement for motion and replication
-		pPawn->AddMovementInput(LocomotionComponent->GetMoveDirection() * 5.f, 1.f, false);
+		// Use locomotion component for motion direction replicated from server (plus speed boost)
+		pPawn->AddMovementInput(LocomotionComponent->GetMoveDirection() 
+			* 4.f, 1.f, false);
 	}
 }
 
@@ -45,14 +41,7 @@ void ACustomPathfindingPlayerController::SetupInputComponent()
 	// set up gameplay key bindings
 	Super::SetupInputComponent();
 
-	InputComponent->BindAction("SetDestination", IE_Pressed, this, &ACustomPathfindingPlayerController::OnSetDestinationPressed);
 	InputComponent->BindAction("SetDestination", IE_Released, this, &ACustomPathfindingPlayerController::OnSetDestinationReleased);
-}
-
-void ACustomPathfindingPlayerController::OnSetDestinationPressed()
-{
-	// Just in case the character was moving because of a previous short press we stop it
-	// StopMovement();	// this is using the navsystem
 }
 
 void ACustomPathfindingPlayerController::OnSetDestinationReleased()
